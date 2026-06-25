@@ -1,0 +1,6 @@
+[Unit]
+Description=Borg backup do Nextcloud
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/backupnextcloud

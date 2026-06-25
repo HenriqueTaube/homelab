@@ -1,0 +1,67 @@
+logging {
+  level = "info"
+}
+
+local.file_match "nextcloud_logs" {
+  path_targets = [
+    {
+      __path__  = "/var/www/nextcloud/data/nextcloud.log*",
+      job       = "nextcloud",
+      host      = "nextcloud",
+      app       = "nextcloud",
+    },
+    {
+      __path__ = "/var/log/apache2/nextcloud_access.log*",
+      job      = "nextcloud_access",
+      host     = "nextcloud",
+      service  = "apache",
+    },
+    {
+      __path__ = "/var/log/apache2/nextcloud_error.log*",
+      job      = "nextcloud_error",
+      host     = "nextcloud",
+      service  = "apache",
+    },
+    {
+      __path__ = "/var/log/apache2/nextcloud_ssl_access.log*",
+      job      = "nextcloud_ssl_access",
+      host     = "nextcloud",
+      service  = "apache",
+    },
+    {
+      __path__ = "/var/log/apache2/nextcloud_ssl_error.log*",
+      job      = "nextcloud_ssl_error",
+      host     = "nextcloud",
+      service  = "apache",
+    },
+    {
+      __path__  = "/var/log/backupnextcloud.log*",
+      job       = "borg",
+      host      = "nextcloud",
+      app       = "borg",
+     },
+     {
+      __path__  = "/var/log/syslog*",
+      job       = "syslog",
+      host      = "nextcloud",
+      app       = "system",
+    },
+     {
+      __path__  = "/var/log/auth.log*",
+      job       = "authlog",
+      host      = "nextcloud",
+      app       = "ssh",
+    },
+  ]
+}
+
+loki.source.file "nextcloud_logs" {
+  targets    = local.file_match.nextcloud_logs.targets
+  forward_to = [loki.write.loki.receiver]
+}
+
+loki.write "loki" {
+  endpoint {
+    url = "http://192.168.1.192:3100/loki/api/v1/push"
+  }
+}

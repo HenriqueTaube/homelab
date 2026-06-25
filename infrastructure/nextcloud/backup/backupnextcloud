@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOGFILE="/var/log/backupnextcloud.log"
+exec > >(tee -a "$LOGFILE") 2>&1
+echo "=============================="
+echo "Backup iniciado em $(date)"
+
+REPO="/srv/backup/nextcloud/borg"
+NEXTCLOUD_DATA="/mnt/nextcloud"
+OCC_PATH="/var/www/nextcloud/occ"
+export BORG_PASSCOMMAND="cat /root/.borgpass"
+export BORG_RELOCATED_REPO_ACCESS_IS_OK=yes
+
+# senha do borg via arquivo (evita prompt)
+export BORG_PASSCOMMAND="cat /root/.borgpass"
+
+# nome do archive
+ARCHIVE="nextcloud-$(date +%Y-%m-%d_%H-%M)"
+
+cleanup() {
+  echo "==> Garantindo saída do maintenance mode..."
+  sudo -u www-data php "$OCC_PATH" maintenance:mode --off || true
+}
+trap cleanup EXIT
+
+echo "==> Colocando Nextcloud em maintenance mode..."
+sudo -u www-data php "$OCC_PATH" maintenance:mode --on || true
+
+echo "==> Criando backup: $ARCHIVE"
+set +e
+borg create --progress --stats --verbose \
+  "$REPO::$ARCHIVE" \
+  "$NEXTCLOUD_DATA"
+BORG_RC=$?
+set -e
+
+echo "==> borg create retornou código: $BORG_RC"
+
+if [ "$BORG_RC" -gt 1 ]; then
+  echo "error: borg error"
+  exit "$BORG_RC"
+fi
+
+echo "==> Tirando Nextcloud do maintenance mode..."
+sudo -u www-data php "$OCC_PATH" maintenance:mode --off || true
+
+echo "==> Mantendo só os 2 últimos backups"
+borg prune --keep-last=2 "$REPO"
+
+echo "==> Compactando repo"
+borg compact "$REPO"
+
+echo "==> Relatório do que mudou (últimos 2 backups):"
+# lista os 2 últimos archives e mostra diff
+LAST2=$(borg list --short "$REPO" | tail -n 2 || true)
+if [ "$(echo "$LAST2" | wc -l)" -eq 2 ]; then
+  A1=$(echo "$LAST2" | head -n 1)
+  A2=$(echo "$LAST2" | tail -n 1)
+  echo "-- Diff: $A1 -> $A2"
+  borg diff "$REPO::$A1" "$A2" || true
+else
+  echo "(ainda não existem 2 backups para comparar)"
+fi
+
+if [ "$BORG_RC" -eq 1 ]; then
+  echo "==> Backup concluído com warnings"
+else
+
+  echo "==> ultimo backup $(date +%Y-%m-%d_%H-%M)"
+
+fi
