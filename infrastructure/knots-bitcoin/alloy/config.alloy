@@ -1,0 +1,43 @@
+logging {
+  level = "info"
+}
+
+local.file_match "knots_logs" {
+  path_targets = [
+    {
+      __path__  = "/var/log/electrs.log*",
+      job       = "electrs",
+      host      = "knots",
+      app       = "electrs",
+    },
+    {
+      __path__ = "/mnt/knots/.bitcoin/debug.log*",
+      job      = "bitcoind",
+      host     = "knots",
+      service  = "bitcoind",
+    },
+    {
+      __path__  = "/var/log/syslog*",
+      job       = "syslog_knots",
+      host      = "knots",
+      app       = "system_knots",
+    },
+    {
+      __path__  = "/var/log/auth.log*",
+      job       = "authlog",
+      host      = "knots",
+      app       = "ssh",
+    },
+  ]
+}
+
+loki.source.file "knots_logs" {
+  targets    = local.file_match.knots_logs.targets
+  forward_to = [loki.write.loki.receiver]
+}
+
+loki.write "loki" {
+  endpoint {
+    url = "http://192.168.1.192:3100/loki/api/v1/push"
+  }
+}
