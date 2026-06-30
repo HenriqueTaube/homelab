@@ -40,20 +40,7 @@ IMAGE_REPO=192.168.1.191:3000/henrique/wireguard IMAGE_TAG=multi sh build-multia
 
 The `wg0.conf` is stored on the Longhorn PVC and mounted into the pod at `/etc/wireguard/wg0.conf`.
 
-**The actual config is NOT in this repo** — it contains private keys. See `config/wg0.conf.template` for the structure.
-
-To add or change a peer:
-
-```bash
-# enter the pod via toolbox
-kubectl exec -it -n wireguard deployment/wireguard -- sh
-
-# edit the config
-vi /etc/wireguard/wg0.conf
-
-# restart the pod to apply
-kubectl rollout restart deployment/wireguard -n wireguard
-```
+**The actual config is NOT in this repo** — it contains private keys. See `config/wg0.conf` for the structure.
 
 ## DNS
 
