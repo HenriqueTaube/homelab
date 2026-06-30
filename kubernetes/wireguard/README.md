@@ -15,9 +15,9 @@ VPN for remote access to the home network. Runs plain WireGuard without a web UI
 
 ## Custom image
 
-WireGuard does not have an official Kubernetes image. A custom image was built from `debian:bookworm-slim` with `wireguard-tools`, `iptables`, and a custom entrypoint.
+WireGuard has images available on Docker Hub, but a custom image was built from scratch to learn how it works — understanding the Dockerfile, entrypoint, and how WireGuard runs inside a container.
 
-The image is built for `linux/amd64` and `linux/arm64` (multiarch) and pushed to the local Forgejo registry.
+Built from `debian:bookworm-slim` with `wireguard-tools`, `iptables`, and a custom entrypoint. Built for `linux/amd64` and `linux/arm64` (multiarch) and pushed to the local Forgejo registry.
 
 Source files are in `image/`:
 
