@@ -78,6 +78,8 @@ curl ifconfig.me
 
 ## Lesson
 
+**Get a UPS (no-break) for the server** — a power outage should not take down the whole homelab.
+
 After a power outage always check:
 
 1. WAN IP on the router admin page — confirm it is not `100.x.x.x`
