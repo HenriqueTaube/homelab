@@ -51,22 +51,6 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now timerbackup.timer
 ```
 
-## Useful commands
-
-```bash
-# Check timer status
-systemctl status timerbackup.timer
-
-# List existing archives
-sudo borg list /srv/backup/nextcloud/borg
-
-# Restore an archive
-sudo borg extract /srv/backup/nextcloud/borg::ARCHIVE-NAME
-
-# View last backup log
-sudo tail -f /var/log/backupnextcloud.log
-```
-
 ## Limitations
 
 - Backup is **local only** — if the VM disk dies, the backup is lost too

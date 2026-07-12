@@ -39,15 +39,3 @@ sudo cp config.alloy /etc/alloy/config.alloy
 sudo systemctl enable --now alloy
 ```
 
-## Useful commands
-
-```bash
-# Check status
-systemctl status alloy
-
-# Reload config without restart
-sudo systemctl reload alloy
-
-# View logs
-journalctl -u alloy -f
-```

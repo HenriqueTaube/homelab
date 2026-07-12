@@ -38,15 +38,3 @@ sudo exportfs -ra
 sudo systemctl enable --now nfs-kernel-server
 ```
 
-## Useful commands
-
-```bash
-# Check active exports
-sudo exportfs -v
-
-# Check NFS status
-systemctl status nfs-kernel-server
-
-# Check connected clients
-sudo ss -tnp | grep 2049
-```
