@@ -2,9 +2,9 @@ infrastructure/pihole/config/pihole.toml filter=git-crypt diff=git-crypt
 infrastructure/pihole/config/dhcp.leases filter=git-crypt diff=git-crypt
 infrastructure/nextcloud/config/config.php filter=git-crypt diff=git-crypt
 kubernetes/forgejo/config/app.ini filter=git-crypt diff=git-crypt
-kubernetes/site-orçamentos/api/.env filter=git-crypt diff=git-crypt
-kubernetes/site-orçamentos/assets/* filter=git-crypt diff=git-crypt
-kubernetes/site-orçamentos/models/* filter=git-crypt diff=git-crypt
+kubernetes/site-orçamento/api/.env filter=git-crypt diff=git-crypt
+kubernetes/site-orçamento/assets/* filter=git-crypt diff=git-crypt
+kubernetes/site-orçamento/models/* filter=git-crypt diff=git-crypt
 
 
 
