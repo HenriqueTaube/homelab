@@ -63,9 +63,14 @@ sudo e2fsck -fy /dev/sdb1
 sudo mount /dev/sdb1 /mnt/nextcloud
 ```
 
+## Open question — why doesn't the disk mount at boot?
+
+Still don't know why `/dev/sdb1` isn't coming back mounted on its own after a reboot — no clear cause identified yet, not just "why did it get dirty" but why it doesn't just remount cleanly at boot like it should. Worth checking `/etc/fstab` for that entry next time (whether it's there at all, and if the options are right), but not confirmed as the cause — keeping an eye on this to actually figure it out next time it happens rather than just re-mounting and moving on.
+
 ## Lesson
 
 - An unmounted data disk under Nextcloud doesn't show an error — it just makes files look deleted. Empty folders reported by users are a first sign to check `mount`, not to assume data loss.
 - Always run `occ files:scan --all` after remounting — Nextcloud's file cache doesn't refresh on its own.
 - If `/dev/sdb1` drops again, check power, cabling, and USB/SATA adapter — the trigger wasn't confirmed this time, so it's worth watching for a recurrence.
+- Root cause of why it doesn't auto-mount at boot is still unknown — see "Open question" above. Next occurrence, check `/etc/fstab` and boot logs before just remounting.
 - Environment for reference: Nextcloud server, data mount `/mnt/nextcloud`, disk `/dev/sdb1`, ext4.

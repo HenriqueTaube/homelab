@@ -11,9 +11,7 @@ Turned out WireGuard had been deployed manually a long time ago with `kubectl ap
 ### 1. Confirmed the commit was pushed and Flux was at the right revision
 
 ```bash
-git log -1 --format="%H %s"
-git rev-parse origin/master
-kubectl -n flux-system get gitrepository flux-system -o yaml | grep -E "url:|branch:"
+flux events
 flux get kustomizations -A
 ```
 
@@ -22,9 +20,6 @@ Commit was pushed, `GitRepository` was synced to the right SHA, all Kustomizatio
 ### 2. Rendered the actual manifests Flux applies for `apps`
 
 ```bash
-kubectl -n flux-system get kustomization apps -o yaml | grep -E "path:"
-# path: ./clusters/homelab/apps
-
 cat clusters/homelab/apps/kustomization.yaml
 ```
 
@@ -108,16 +103,8 @@ Before adding any existing-but-unmanaged app to a Flux Kustomization:
 2. Render the overlay locally first and read every line: `kubectl kustomize apps/<app>/overlays/homelab`.
 3. Watch `kubectl -n <ns> get events --sort-by='.lastTimestamp'` immediately after the first real reconcile — that's where drift-induced bugs surface (`FailedCreate`, `FailedAttachVolume`, wrong PVC bound, etc).
 
-Quick audit for this whole class of bug, across every app in the repo:
+## Considered and rejected — replacing the PVC with a SOPS-encrypted Secret
 
-```bash
-cd ~/gitops
-for app in apps/*/overlays/homelab; do
-  name=$(echo "$app" | cut -d/ -f2)
-  if ! grep -rq "$name/overlays/homelab" clusters/homelab/*/kustomization.yaml 2>/dev/null; then
-    echo "NOT managed by Flux: $name"
-  fi
-done
-```
+Considered moving `wg0.conf` off the `wireguard-longhorn` PVC and into a SOPS-encrypted Secret (same pattern as `apps/duckdns/overlays/homelab/secret.yaml`), so peer/key changes would be tracked in git instead of being a live edit inside the pod.
 
-Run this after adding any new app folder to the repo, not just when something breaks.
+Decided against it: the drift that caused this incident was the app not being referenced in any Flux Kustomization at all — not the PVC itself. Now that `wireguard-longhorn` is properly declared in git (`pvc-longhorn.yaml`, wired into `overlays/homelab/kustomization.yaml`), the object is git-managed like any other; only its *contents* are opaque to git, same as any stateful volume (no different from a database's data directory). A Secret would also break the current peer-management workflow ("exec into the pod, edit the config, restart it" — works today because the edit lands on a PVC that survives the restart; a Secret-backed volume would discard that edit on the next restart), adding `sops` friction to every peer change for a home VPN where peer changes are rare. Not worth it without a concrete need driving it.

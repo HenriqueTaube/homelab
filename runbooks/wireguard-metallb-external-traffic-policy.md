@@ -13,7 +13,7 @@ Checked duckdns.org — the registered IP matched the router's current WAN IP. D
 ### 2. Checked pod/service events
 
 ```bash
-kubectl -n wireguard get events --sort-by='.lastTimestamp'
+kubectl -n wireguard get events
 ```
 
 Found the actual failure signature:
@@ -83,3 +83,5 @@ After a router reboot, if DuckDNS shows the correct IP but WireGuard still won't
 3. `externalTrafficPolicy: Local` is the fix for any `hostNetwork` + MetalLB Layer2 service — it ties VIP announcement to wherever the pod actually is, no manual node pinning needed.
 4. Deleting the pod is not really "fixing" anything here — it's a coin flip that happens to realign the pod with whatever node MetalLB is currently announcing from. Don't rely on it as the standing workaround.
 5. `apps/wireguard/README.md` mentions `nodeAffinity` pinning that doesn't actually exist in the manifests — treat that doc as aspirational until it's fixed or removed.
+
+See also [wireguard-gitops-drift-not-in-flux.md](./wireguard-gitops-drift-not-in-flux.md) — same app, a separate incident found while fixing this one (the app was never actually managed by Flux), plus a note on replacing the PVC holding `wg0.conf` with a SOPS-encrypted Secret.
