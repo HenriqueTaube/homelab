@@ -65,7 +65,7 @@ sudo mount /dev/sdb1 /mnt/nextcloud
 
 ## Open question — why doesn't the disk mount at boot?
 
-Still don't know why `/dev/sdb1` isn't coming back mounted on its own after a reboot — no clear cause identified yet, not just "why did it get dirty" but why it doesn't just remount cleanly at boot like it should. Worth checking `/etc/fstab` for that entry next time (whether it's there at all, and if the options are right), but not confirmed as the cause — keeping an eye on this to actually figure it out next time it happens rather than just re-mounting and moving on.
+**Answered** — see [Nextcloud data disk not automounting after Proxmox host reboot](./nextcloud-data-disk-not-automounting-boot.md). It recurred after a full Proxmox host reboot: the ext4 error flag from an unclean shutdown made the automatic `systemd-fsck` (triggered by `pass=2` in fstab) fail, which cascaded into the mount unit failing with "dependency" before it ever attempted the mount. Fixed with `e2fsck -f` plus `nofail` added to the fstab entry.
 
 ## Lesson
 
