@@ -1,0 +1,22 @@
+auto lo
+iface lo inet loopback
+
+iface nic0 inet manual
+
+auto vmbr0
+iface vmbr0 inet static
+	address 192.168.1.110/24
+	gateway 192.168.1.1
+        dns-nameservers 192.168.1.233 fd00::233
+	bridge-ports nic0
+	bridge-stp off
+	bridge-fd 0
+
+iface nic1 inet manual
+
+iface nic2 inet manual
+
+iface nic3 inet manual
+
+
+source /etc/network/interfaces.d/*
