@@ -44,7 +44,7 @@ Router reboots are exactly the kind of event that can cause MetalLB's memberlist
 
 Deleting the pod "fixed" it only by coincidence: the pod got rescheduled onto the same node MetalLB was already announcing from at that moment, realigning the two.
 
-Also noted: `apps/wireguard/README.md` claims the pod is pinned to a fixed node via `nodeAffinity`, but no such affinity exists in the actual manifests — the pod can float freely, making this mismatch more likely to happen.
+Also noted: `apps/wireguard/README.md` claims the pod is pinned to a fixed node via `nodeAffinity`, but no such affinity exists in the actual manifests — the pod can float freely, making this mismatch more likely to happen. **SOLVED** — see [wireguard-worker-rasp-nodeip-and-postup-nat.md](./wireguard-worker-rasp-nodeip-and-postup-nat.md), confirmed working on both `worker-prox` and `worker-rasp`.
 
 ## Fix
 
@@ -82,6 +82,6 @@ After a router reboot, if DuckDNS shows the correct IP but WireGuard still won't
 2. Check `kubectl -n wireguard get svc wireguard -o yaml | grep externalTrafficPolicy` — if it's `Cluster` on a `hostNetwork` pod behind MetalLB Layer2, that's the bug: MetalLB can announce the VIP from a different node than the one running the pod, breaking return routing through the home router's NAT.
 3. `externalTrafficPolicy: Local` is the fix for any `hostNetwork` + MetalLB Layer2 service — it ties VIP announcement to wherever the pod actually is, no manual node pinning needed.
 4. Deleting the pod is not really "fixing" anything here — it's a coin flip that happens to realign the pod with whatever node MetalLB is currently announcing from. Don't rely on it as the standing workaround.
-5. `apps/wireguard/README.md` mentions `nodeAffinity` pinning that doesn't actually exist in the manifests — treat that doc as aspirational until it's fixed or removed.
+5. `apps/wireguard/README.md` mentions `nodeAffinity` pinning that doesn't actually exist in the manifests — treat that doc as aspirational until it's fixed or removed. **SOLVED** — see [wireguard-worker-rasp-nodeip-and-postup-nat.md](./wireguard-worker-rasp-nodeip-and-postup-nat.md).
 
 See also [wireguard-gitops-drift-not-in-flux.md](./wireguard-gitops-drift-not-in-flux.md) — same app, a separate incident found while fixing this one (the app was never actually managed by Flux), plus a note on replacing the PVC holding `wg0.conf` with a SOPS-encrypted Secret.
