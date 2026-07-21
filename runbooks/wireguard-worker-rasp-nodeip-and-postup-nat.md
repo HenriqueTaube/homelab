@@ -107,7 +107,6 @@ kubectl logs -n wireguard <pod>
 Pulled the config out of the running pod, edited locally, pushed it back:
 
 ```bash
-POD=$(kubectl get pod -n wireguard -l app=wireguard -o jsonpath='{.items[0].metadata.name}')
 kubectl cp wireguard/$POD:/etc/wireguard/wg0.conf ./wg0.conf
 # edit locally
 kubectl cp ./wg0.conf wireguard/$POD:/etc/wireguard/wg0.conf
