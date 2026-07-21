@@ -174,14 +174,10 @@ sdf
 - Ran the extended self-test (`smartctl -t long`) — found a genuine read failure at LBA `76490528`, ~10% into the surface scan. The drive has a real bad sector independent of the USB/SATA question. Treating this disk as failing going forward regardless of the NFS finding.
 - Plan is to replace this disk once new HDD prices come back down — currently high.
 
-## Status / next steps
+## Resolution
 
-- [x] Run `smartctl -t long /dev/sdc` to fully validate the relocated disk — found a real read failure at LBA `76490528`, drive is not fully healthy
-- [x] Re-run `vzdump` against VM 102/103 with the disk fix + NFS target — retried 2026-07-18, froze again at ~5%, same symptom. Disk fix alone did not resolve the freeze.
-- [x] Test with the NFS target removed from the equation — swapped to a local USB pendrive on 2026-07-18, ran a full `vzdump 102 103 104` job with zero host freeze. **Confirmed: NFS was the actual freeze trigger, not the disk or memory.**
-- [x] Diagnose the new pendrive error — `File too large` traced to the pendrive being FAT32 (4GiB single-file limit), unrelated to the original freeze
-- [x] Reformat the pendrive as ext4 — done, backup job re-running against it as of 2026-07-18
-- [ ] Confirm the ext4 pendrive run completes end-to-end with no error
-- [ ] Figure out why the NFS mount hangs the host instead of erroring — check the NFS server (`192.168.1.224`) for its own health/load during past backup windows, and consider NFS mount options (`soft` vs `hard`, timeouts) so a future NFS issue degrades to an error instead of a full host freeze
-- [ ] Decide on a real long-term backup destination — a 64GB pendrive is only good enough to prove the diagnosis, not for ongoing backups
-- [ ] Plan to retire/replace the Longhorn disk (`ST500LM012`, serial `S2ZAJ5BD908373`) — not urgent for data safety (Longhorn replica + separate backup cover it), but it shouldn't be trusted long-term; waiting on HDD prices to come down
+After reformatting the pendrive as ext4, the full `vzdump` job for VMs 102 (nextcloud), 103 (knots), and 104 (pihole) completed successfully with no host freeze.
+
+**Root cause confirmed: NFS backup target.** The NFS export at `192.168.1.224` caused the Proxmox host to hang under sustained backup I/O. A local ext4 pendrive plugged directly into the host has no such issue.
+
+The Longhorn disk (`ST500LM012`, serial `S2ZAJ5BD908373`) has a genuine bad sector and should be replaced when HDD prices come down — not urgent since Longhorn keeps a second replica on another disk.
