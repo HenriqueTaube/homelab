@@ -89,8 +89,3 @@ Confirms two things going forward: this disk's automount is only as reliable as 
 
 Environment for reference: Nextcloud server, data mount `/mnt/nextcloud`, disk `/dev/sdb1`, ext4, `pass=2` in fstab.
 
-## Lesson
-
-- A dirty ext4 flag blocking automount isn't always caused by "just an unclean shutdown" — check whether something else is also touching the same disk. In this case the Proxmox host itself was double-mounting the disk via its own `/etc/fstab`, independent of the VM's passthrough mount; that's the more likely root cause of the dirty flag recurring at all. Audit the host's `/etc/fstab` for any UUID that also appears in a VM's passthrough config.
-- The `nofail` fix genuinely works (it stops the failure from blocking boot), but it doesn't make the disk self-heal — every unclean shutdown still needs a manual `e2fsck -f` + `mount -a` afterward. Worth writing a small script/systemd unit that detects an unmounted-but-configured disk and runs the fsck+mount automatically, instead of doing it by hand each time.
-- Since this disk's automount reliability is downstream of the Proxmox host staying up cleanly, the `vzdump` freeze issue (separate runbook) is worth resolving fully — every freeze-and-hard-reboot cycle is another chance for this to recur.
