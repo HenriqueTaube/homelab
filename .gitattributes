@@ -5,6 +5,11 @@ kubernetes/forgejo/config/app.ini filter=git-crypt diff=git-crypt
 kubernetes/site-orçamento/api/.env filter=git-crypt diff=git-crypt
 kubernetes/site-orçamento/assets/* filter=git-crypt diff=git-crypt
 kubernetes/site-orçamento/models/* filter=git-crypt diff=git-crypt
+infrastructure/talos/config/controlplane.yaml filter=git-crypt diff=git-crypt
+infrastructure/talos/config/worker-prox.yaml filter=git-crypt diff=git-crypt
+infrastructure/talos/config/worker-rasp.yaml filter=git-crypt diff=git-crypt
+infrastructure/talos/config/talosconfig filter=git-crypt diff=git-crypt
+infrastructure/talos/config/kubeconfig filter=git-crypt diff=git-crypt
 
 
 

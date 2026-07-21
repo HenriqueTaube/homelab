@@ -12,9 +12,18 @@ Bitcoin Knots full node with Electrs for personal wallet connection, running on 
 | Index DB | RocksDB (used by electrs) |
 | Electrum port | `0.0.0.0:50001` |
 
-## Storage — LVM
+## Storage
 
-Two SSDs joined into a single LVM volume group:
+Two passthrough disks from Proxmox (VM 103), joined into a single LVM volume group inside the VM:
+
+| Proxmox device | Disk | Size | Inside VM |
+|----------------|------|------|-----------|
+| scsi1 | Kingston SA400S37 960GB | 960 GB | `/dev/sdb` |
+| scsi2 | Crucial BX500 1TB | 1 TB | `/dev/sdc` |
+
+Both disks combined into `vg_knots` → mounted at `/mnt/knots`.
+
+### LVM layout
 
 | Disk | Size | Role |
 |------|------|------|
