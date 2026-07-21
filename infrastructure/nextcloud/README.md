@@ -13,6 +13,18 @@ Self-hosted file sync and share, running on Ubuntu VM in Proxmox.
 | Database | MariaDB |
 | PHP | 8.4 via mod_php (mpm_prefork) |
 
+## Storage
+
+Two passthrough disks from Proxmox (VM 102), mounted inside the VM:
+
+| Mount point | Disk | Size | Purpose |
+|-------------|------|------|---------|
+| `/mnt/nextcloud` | Kingston SA400S37 960GB | 960 GB | Nextcloud data directory |
+| `/srv/backup` | WDC WD10EURX 1TB | 1 TB | NFS export — Longhorn backup target |
+
+The Nextcloud `config.php` points `datadirectory` to `/mnt/nextcloud`.  
+The NFS export (`/srv/backup/nfs`) is used by Longhorn for volume backups — see [`nfs/`](./nfs/README.md).
+
 ## Installation method
 
 Manual install on Ubuntu (LAMP stack):
