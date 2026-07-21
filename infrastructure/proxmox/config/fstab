@@ -3,5 +3,4 @@
 UUID=FF7A-2B70 /boot/efi vfat defaults 0 1
 /dev/pve/swap none swap sw 0 0
 proc /proc proc defaults 0 0
-UUID=660b0a6c-c105-4cf9-9827-3950ceca5bd4  /mnt/nextcloud  ext4  defaults,nofail  0  2
-UUID=22e41f52-e788-4b79-826a-9b7f9cabd36f /mnt/knots ext4 defaults,nofail 0 2
+UUID=9ceae3ed-c58e-451d-b2cf-33286d221c0a /mnt/pendrive defaults 0 2
