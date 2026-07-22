@@ -50,4 +50,4 @@ Running `pc-on` deletes any previous job and creates a new one — the pod runs,
 
 ## Kubernetes manifests
 
-Manifests live in the gitops repo at `apps/pc-on/`. The job runs on `worker-prox` via `nodeSelector` since that's where the Arduino is physically connected.
+Manifests live in the gitops repo at [`apps/pc-on/`](https://github.com/HenriqueTaube/gitops/tree/master/apps/pc-on). The job runs on `worker-prox` via `nodeSelector` since that's where the Arduino is physically connected.
