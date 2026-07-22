@@ -1,0 +1,262 @@
+/* Keyframes */
+
+@keyframes blink-critical {
+	to {
+		background-color: @critical;
+	}
+}
+
+/* Styles */
+
+/* Colors */
+@define-color black #181a1b;
+@define-color red #cc241d;
+@define-color green #689d6a;
+@define-color yellow #d79921;
+@define-color blue #3f5f78;
+@define-color purple #56606b;
+@define-color aqua #5f7f72;
+@define-color gray #8b8f86;
+@define-color brgray #6b7280;
+@define-color brred #fb4934;
+@define-color brgreen #8faa6a;
+@define-color bryellow #c89b3c;
+@define-color brblue #6f8faf;
+@define-color brpurple #74849a;
+@define-color braqua #7b9c8f;
+@define-color white #d8d2c4;
+@define-color bg2 #303437;
+
+@define-color warning @bryellow;
+@define-color critical @red;
+@define-color mode @black;
+@define-color unfocused @bg2;
+@define-color focused @brblue;
+@define-color inactive @brgray;
+@define-color sound @brblue;
+@define-color network @blue;
+@define-color memory @gray;
+@define-color cpu @green;
+@define-color temp @bryellow;
+@define-color layout @bryellow;
+@define-color battery @aqua;
+@define-color date @black;
+@define-color time @white;
+
+/* Reset all styles */
+* {
+	border: none;
+	border-radius: 0;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	box-shadow: none;
+	text-shadow: none;
+	icon-shadow: none;
+}
+
+/* The whole bar */
+#waybar {
+	background: rgba(24, 26, 27, 0.92);
+	color: @white;
+	font-family: JetBrains Mono, Siji;
+	font-size: 12pt;
+	/*font-weight: bold;*/
+}
+
+/* Each module */
+#battery,
+#clock,
+#cpu,
+#language,
+#memory,
+#mode,
+#network,
+#pulseaudio,
+#temperature,
+#tray,
+#backlight,
+#idle_inhibitor,
+#disk,
+#user,
+#mpris {
+	padding-left: 12pt;
+	padding-right: 12pt;
+}
+
+/* Each critical module */
+#mode,
+#memory.critical,
+#cpu.critical,
+#temperature.critical,
+#battery.critical.discharging {
+	animation-timing-function: linear;
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
+	animation-name: blink-critical;
+	animation-duration: 1s;
+}
+
+/* Each warning */
+#network.disconnected,
+#memory.warning,
+#cpu.warning,
+#temperature.warning,
+#battery.warning.discharging {
+	color: @warning;
+}
+
+/* And now modules themselves in their respective order */
+
+/* Current sway mode (resize etc) */
+#mode {
+	color: @white;
+	background: @mode;
+}
+
+/* Workspaces stuff */
+#workspaces button {
+	/*font-weight: bold;*/
+	padding-left: 4pt;
+	padding-right: 4pt;
+	color: @white;
+	background: @unfocused;
+}
+
+/* Inactive (on unfocused output) */
+#workspaces button.visible {
+	color: @white;
+	background: @inactive;
+}
+
+/* Active (on focused output) */
+#workspaces button.focused {
+	color: @black;
+	background: @focused;
+}
+
+/* Contains an urgent window */
+#workspaces button.urgent {
+	color: @black;
+	background: @warning;
+}
+
+/* Style when cursor is on the button */
+#workspaces button:hover {
+	background: @black;
+	color: @white;
+}
+
+#window {
+	margin-right: 35pt;
+	margin-left: 35pt;
+}
+
+#pulseaudio {
+	background: @sound;
+	color: @black;
+}
+
+#network {
+	background: @network;
+	color: @white;
+}
+
+#memory {
+	background: @memory;
+	color: @black;
+}
+
+#cpu {
+	background: @cpu;
+	color: @black;
+}
+
+#temperature {
+	background: @temp;
+	color: @black;
+}
+
+#language {
+	background: @layout;
+	color: @black;
+}
+
+#battery {
+	background: @battery;
+	color: @black;
+}
+
+#tray {
+	background: @date;
+}
+
+#clock.date {
+	background: @date;
+	color: @white;
+}
+
+#clock.time {
+	background: @time;
+	color: @black;
+}
+
+#custom-arrow1 {
+	font-size: 13pt;
+	color: @time;
+	background: @date;
+}
+
+#custom-arrow2 {
+	font-size: 13pt;
+	color: @date;
+	background: @layout;
+}
+
+#custom-arrow3 {
+	font-size: 13pt;
+	color: @layout;
+	background: @battery;
+}
+
+#custom-arrow4 {
+	font-size: 13pt;
+	color: @battery;
+	background: @temp;
+}
+
+#custom-arrow5 {
+	font-size: 13pt;
+	color: @temp;
+	background: @cpu;
+}
+
+#custom-arrow6 {
+	font-size: 13pt;
+	color: @cpu;
+	background: @memory;
+}
+
+#custom-arrow7 {
+	font-size: 13pt;
+	color: @memory;
+	background: @network;
+}
+
+#custom-arrow8 {
+	font-size: 13pt;
+	color: @network;
+	background: @sound;
+}
+
+#custom-arrow9 {
+	font-size: 13pt;
+	color: @sound;
+	background: transparent;
+}
+
+#custom-arrow10 {
+	font-size: 13pt;
+	color: @unfocused;
+	background: transparent;
+}
