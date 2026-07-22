@@ -9,10 +9,10 @@ The desktop PC runs Windows 11 with Solidworks and AutoCAD — heavy software th
 ## Hardware
 
 - Arduino (relay on pin 8)
-- 5V single channel relay module
+- 5V single channel relay module — wired to the **NO (Normally Open)** contact
 - Wired to the PC motherboard power button header pins
 
-The Arduino connects via USB to `worker-prox` (Proxmox VM 108) and appears as `/dev/ttyUSB0` (CH340 chipset, USB ID `1a86:7523`). It is passed through from Proxmox to the VM.
+The relay uses the NO contact so the circuit stays open at rest and only closes briefly when triggered. The Arduino connects via USB to `worker-prox` (Proxmox VM 108) and appears as `/dev/ttyUSB0` (CH340 chipset, USB ID `1a86:7523`). It is passed through from Proxmox to the VM.
 
 ## How it works
 
