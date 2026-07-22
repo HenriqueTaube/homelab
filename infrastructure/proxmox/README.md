@@ -12,7 +12,7 @@ Proxmox VE hypervisor running all VMs and the Kubernetes nodes for the homelab.
 | CPU | Intel Core i5-8400 @ 2.80GHz — 6 cores, 1 socket |
 | RAM | 24 GB |
 | Boot disk | NVMe SSD 256 GB |
-| Motherboard | Server-focused mini board (AliExpress) — 8x SATA ports |
+| Motherboard | [C246 ITX NAS Motherboard](https://aliexpress.com/item/1005009139151621.html) (AliExpress) — 8x SATA 3.0 |
 
 ## VMs
 
