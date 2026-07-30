@@ -8,3 +8,10 @@ daemon_p2p_addr = "127.0.0.1:8333"
 
 electrum_rpc_addr = "0.0.0.0:50001"
 log_filters = "INFO"
+
+# bitcoind has rpcuser/rpcpassword set (needed for the mempool backend's
+# direct Core RPC access), which disables Bitcoin Core's cookie-auth file.
+# electrs must be told the same credentials explicitly — the config key is
+# "auth", NOT "cookie" (a key named "cookie" is silently ignored and electrs
+# falls back to looking for the nonexistent .cookie file).
+auth = "mempool:<RPC_PASSWORD>"
