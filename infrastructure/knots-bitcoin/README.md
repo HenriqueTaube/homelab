@@ -61,7 +61,9 @@ echo '/dev/vg_knots/lv_knots /mnt/knots ext4 defaults 0 2' | sudo tee -a /etc/fs
 | File | Location on VM | Purpose |
 |------|---------------|---------|
 | `config/bitcoin.conf` | `/mnt/knots/.bitcoin/bitcoin.conf` | Bitcoin Knots config |
-| `config/config.toml` | `/etc/electrs/config.toml` | Electrs config |
+| `config/config.toml` | `~/.electrs/config.toml` (user `knots`, i.e. `/home/knots/.electrs/config.toml`) | Electrs config |
+
+electrs runs as a systemd service (`electrs.service`, `User=knots`), `ExecStart` with no args — it picks up `config.toml` from the default per-user config dir, not `/etc/electrs`. Logs go to `/var/log/electrs.log`, not journald (`StandardOutput`/`StandardError=append:...` in the unit).
 
 ## Key settings
 
@@ -70,13 +72,24 @@ echo '/dev/vg_knots/lv_knots /mnt/knots ext4 defaults 0 2' | sudo tee -a /etc/fs
 txindex=1        ← required by electrs
 dbcache=2048     ← 2GB RAM cache for faster sync
 maxconnections=40
+
+rpcuser / rpcpassword   ← needed for mempool backend's direct Core RPC (runs off-VM,
+                           can't use cookie auth — not network-shareable)
+rpcallowip / rpcbind    ← restricted to the LAN subnet
+zmqpubrawblock / zmqpubrawtx  ← mempool backend's block/tx notifications
 ```
 
 **electrs**
 ```
 daemon_rpc_addr = 127.0.0.1:8332   ← talks to bitcoind locally
 electrum_rpc_addr = 0.0.0.0:50001  ← wallet connects here
+auth = "mempool:<password>"        ← must match bitcoind's rpcuser/rpcpassword;
+                                      key is "auth", NOT "cookie" (silently ignored)
 ```
+
+> Since `bitcoind` has `rpcuser`/`rpcpassword` set, it never writes `.bitcoin/.cookie`.
+> If `electrs`'s `config.toml` doesn't set `auth`, it defaults to cookie-file auth and
+> fails at startup with `failed to open bitcoind cookie file: ... No such file or directory`.
 
 ## Observability
 
