@@ -1,19 +1,26 @@
 # Mempool
 
-Self-hosted [mempool](https://github.com/mempool/mempool) block explorer — frontend + backend, images built from a Forgejo mirror of the upstream repo. `bitcoind` (Knots) and `electrs` are **not** part of this stack — they run outside Kubernetes on the Proxmox Ubuntu VM (see [`infrastructure/knots-bitcoin`](../../infrastructure/knots-bitcoin/README.md)). See the [init runbook](../../runbooks/mempool-kubernetes-init.md) for the full planning history.
+Self-hosted [mempool](https://github.com/mempool/mempool) block explorer — frontend + backend, images built from a Forgejo mirror of the upstream repo. `bitcoind` (Knots) and `electrs` are **not** part of this stack — they run outside Kubernetes on the Proxmox Ubuntu VM (see [`infrastructure/knots-bitcoin`](../../infrastructure/knots-bitcoin/README.md)). See the [init runbook](../../runbooks/mempool-kubernetes-init.md) for the full planning history, build/deploy gotchas, and current status.
+
+**Status: running**, reachable at `http://192.168.1.193:8080`.
+
+**Why self-hosted**: looking up addresses/transactions/fees through mempool.space's public site lets a third party correlate those lookups — and the wallet activity behind them — with your IP. Running it against your own node keeps that private.
 
 ## Stack
 
 | Component | Details |
 |-----------|---------|
 | Namespace | `mempool` |
-| Frontend image | `192.168.1.191:3000/henrique/mempool-frontend:v3.3.1` (built and pushed) |
-| Backend image | `192.168.1.191:3000/henrique/mempool-backend:v3.3.1` (built and pushed) |
+| Frontend image | `192.168.1.191:3000/henrique/mempool-frontend:v3.3.1` (`arm64` only — see runbook) |
+| Backend image | `192.168.1.191:3000/henrique/mempool-backend:v3.3.1` (`arm64` only — see runbook) |
+| Node pinning | Both Deployments pinned to `worker-rasp` (`nodeSelector`), since the images are `arm64`-only |
 | Backend mode | `electrum` (talks to Knots VM's `electrs` on `50001`) |
-| Database | MariaDB ≥ 10.5, standalone in-cluster |
+| Database | MariaDB, standalone in-cluster (`platform/mempool-db` in `gitops`) |
 | Storage | Longhorn PVC (MariaDB) |
 | External IP | `192.168.1.193` (MetalLB LoadBalancer, LAN only) |
 | GeoIP | Not used — `MAXMIND.ENABLED: false` (default), node-map feature not needed |
+
+Actual Kubernetes manifests live in the `gitops` repo (`~/gitops`), not here — `apps/mempool` and `platform/mempool-db`, each with their own short `README.md`. This folder only holds the image-build tooling (below) and background context.
 
 ## Building the images
 

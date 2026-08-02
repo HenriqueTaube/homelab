@@ -2,7 +2,11 @@
 
 ## Context
 
-Goal: run [mempool](https://github.com/mempool/mempool) (frontend + backend) in Kubernetes to browse the Bitcoin blockchain/mempool, while `bitcoind` (Knots) and `electrs` keep running where they already do — outside Kubernetes, on the Proxmox Ubuntu VM (see [`infrastructure/knots-bitcoin`](../infrastructure/knots-bitcoin/README.md)). This is mempool's normal topology; nothing about the node needs to move into the cluster.
+**Status: done, running.** Both `platform/mempool-db` and `apps/mempool` are deployed and reconciled by Flux; mempool is reachable at `http://192.168.1.193:8080`.
+
+Goal: run [mempool](https://github.com/mempool/mempool) (frontend + backend) in Kubernetes to browse the Bitcoin blockchain/mempool against a self-hosted node, while `bitcoind` (Knots) and `electrs` keep running where they already do — outside Kubernetes, on the Proxmox Ubuntu VM (see [`infrastructure/knots-bitcoin`](../infrastructure/knots-bitcoin/README.md)). This is mempool's normal topology; nothing about the node needs to move into the cluster.
+
+**Why self-host at all**: looking up addresses/transactions/fees through mempool.space's public site lets a third party correlate those lookups — and the wallet activity behind them — with your IP. Running it against your own node keeps that private.
 
 Actual Kubernetes manifests live in the separate `gitops` repo (`~/gitops`, `github.com/chtaube/gitops`), following the existing `apps/<name>/base` + `overlays` Kustomize pattern (see `apps/forgejo`, `apps/wireguard` for reference). This file just tracks the plan/decisions; the manifests themselves belong in that repo.
 
@@ -13,7 +17,7 @@ Actual Kubernetes manifests live in the separate `gitops` repo (`~/gitops`, `git
 | Network exposure | MetalLB LoadBalancer `192.168.1.193` | Free IP in `homelab-pool` (`.190`-`.195`). LAN-only — no public ingress. Reachable from WireGuard clients too, since WireGuard peer traffic is MASQUERADEd onto the LAN before it reaches other LAN/cluster services (see `kubernetes/wireguard/config/wg0.conf`) — no extra firewall rule needed for that. |
 | mempool backend mode | `electrum` | User runs plain `romanz/electrs` (Electrum TCP protocol, no TLS, no auth) — not `esplora` (that's for the `mempool/electrs` fork). |
 | Database | **Deployed and running.** MariaDB 11.6, standalone in-cluster (`platform/mempool-db` in `gitops`) | mempool's backend is MySQL/MariaDB-only (hardcoded schema/queries) — **no Postgres support**, confirmed against upstream source/issues. Don't try to reuse CloudNativePG (Postgres-only in this cluster) — small dedicated MariaDB (Deployment + Longhorn PVC), same pattern as `forgejo-db`, secret SOPS-encrypted (unlike `forgejo-db`'s, which was applied manually and was never actually in git). `DATABASE.ENABLED: false` is a known-buggy no-op upstream (backend still hits the MySQL socket and errors) — the DB is not actually optional in practice. |
-| Container images | **Built via Forgejo.** `192.168.1.191:3000/henrique/mempool-{frontend,backend}:v3.3.1`, pushed and confirmed working | Mirrored `mempool/mempool` into Forgejo and built with `kubernetes/mempool/image/build-multiarch.sh` — keeps the full supply chain self-hosted, matching the WireGuard image pattern. See [Build gotchas](#build-gotchas-found-the-hard-way) below for what it took to get a working build. |
+| Container images | **Built via Forgejo, `arm64`-only.** `192.168.1.191:3000/henrique/mempool-{frontend,backend}:v3.3.1` | Mirrored `mempool/mempool` into Forgejo and built with `kubernetes/mempool/image/build-multiarch.sh` — keeps the full supply chain self-hosted, matching the WireGuard image pattern. An `amd64` build was pushed first, then an `arm64` build was pushed to the *same tag* later — this overwrites rather than merges, so the registry now only has `arm64` for `v3.3.1`. Rather than rebuild multi-arch, both Deployments got `nodeSelector: kubernetes.io/hostname: worker-rasp` (baked into `base/`, not the overlay — a minor deviation from the base/overlay-should-be-generic principle, acceptable since this cluster only has the one arm64 node anyway). See [Build gotchas](#build-gotchas-found-the-hard-way) below for what it took to get a working build. |
 
 ## bitcoind (Knots) config — done
 
@@ -86,13 +90,18 @@ Building `v3.3.1` from the Forgejo mirror surfaced several issues, all now fixed
 ## Deploy gotchas (gitops repo)
 
 - **`platform/mempool-db` first Flux reconcile failed**: `overlays/homelab/patch-pvc.yaml` had `ApiVersion: v1` (capital `A`) instead of `apiVersion: v1`. YAML/Kubernetes fields are case-sensitive, so Kustomize couldn't identify the patch's target kind at all — error was `no resource matches strategic merge patch ... failed to find unique target`, which reads like a naming/namespace mismatch but was actually just the capitalization typo. Fixed, `platform` Kustomization reconciled successfully, MariaDB pod running.
+- **Three more case-sensitivity/naming typos in `apps/mempool`**, all caught by running `kubectl kustomize apps/mempool/overlays/homelab` locally *before* pushing (worth doing every time, cheap and catches exactly this class of bug):
+  - `base/kustomization.yaml` listed resources as `secret-backend.yaml`/`deployment-backend.yaml`/etc., but the actual files were named the other way round (`backend-secret.yaml`/`backend-deployment.yaml`/etc.)
+  - A stray junk file literally named `\` sitting in `base/` (leftover from a copy-paste mistake)
+  - `overlays/homelab/kustomization.yaml` had `apiVersion: kustomize.config.k8s.io/vibeta1` (missing the `1` — "v1beta1" typed as "vibeta1")
+  - `overlays/homelab/patch-service-frontend.yaml` had `LoadBalancerIP` (capital `L`) instead of `loadBalancerIP` — this one wouldn't have errored at all, Kubernetes just silently drops unrecognized fields, so MetalLB would've handed out a random pool IP instead of the intended `192.168.1.193`
+- **First deploy attempt still failed at runtime**, even with the manifests correct: backend logs showed `Access denied for user 'mempool'@'10.244.2.34' (using password: YES)`. Root cause, found by execing into the `mempool-mysql` pod and testing auth directly: `mysql.user` had no `mempool` user at all — only `henrique`@`%`. The `mysql-user` key in `platform/mempool-db/base/secret.yaml` had been set to `henrique` by mistake for the database's *very first* boot (empty data directory), and the MariaDB image only runs its user/password initialization on that first boot. Correcting the secret afterward had **no effect** on the already-initialized database — the wrong username was permanently baked into the persisted Longhorn volume. Deleting the `mempool-mysql` *Deployment* alone (tried first, via k9s) didn't help either, since the PVC (and the volume behind it) is a separate object that survives and gets reattached unchanged. Actual fix: scale the deployment to 0, `kubectl delete pvc mempool-mysql-longhorn -n mempool`, scale back to 1 — forces MariaDB to re-initialize from the (by then corrected) secret. Safe here only because mempool had never successfully connected, so there was no real data to lose.
 
 ## Remaining steps
 
 - [x] Decide: official mempool images vs building via Forgejo — **building via Forgejo**, images pushed
 - [x] Confirm `rpcallowip` value applied on the VM — `192.168.1.0/24`, confirmed live on the VM
-- [x] Build both platforms — `v3.3.1` pushed for both `linux/amd64` and `linux/arm64`
-- [x] `platform/mempool-db` written, wired into `clusters/homelab/platform/kustomization.yaml`, MariaDB pod running
-- [ ] Open firewall on the Knots VM for `8332`, `28332`, `28333` to the same CIDR already given to electrs' `50001`
-- [ ] Write `apps/mempool` in the `gitops` repo: namespace, Service/Endpoints pointing at the Knots VM (need its LAN IP), backend Deployment/Service, frontend Deployment/Service with MetalLB IP `192.168.1.193`
-- [ ] Wire `apps/mempool/overlays/homelab` into `clusters/homelab/apps/kustomization.yaml` (see the `wireguard-gitops-drift-not-in-flux` runbook — don't repeat that mistake, add it to the resource list up front)
+- [x] Build images — `v3.3.1`, currently `arm64`-only (see the container images decision above), both Deployments pinned to `worker-rasp`
+- [x] `platform/mempool-db` written, wired into `clusters/homelab/platform/kustomization.yaml`, MariaDB running
+- [x] `apps/mempool` written, wired into `clusters/homelab/apps/kustomization.yaml`, backend/frontend running
+- [x] Confirmed reachable at `http://192.168.1.193:8080`
