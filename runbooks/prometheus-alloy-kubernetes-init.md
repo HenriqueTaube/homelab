@@ -2,7 +2,7 @@
 
 ## Context
 
-**Status: installed manually via Helm, both running.** Not yet in the `gitops` repo. Still missing: wiring Prometheus up as a Grafana datasource.
+**Status: installed manually via Helm, both running, Prometheus wired into Grafana.** Not yet in the `gitops` repo.
 
 Goal: bring the Kubernetes cluster itself into observability. Today only the Proxmox VMs ship logs to Loki (via Alloy — see [`kubernetes/loki`](../kubernetes/loki/README.md)), and there is no metrics collection in-cluster at all. This adds:
 
@@ -56,7 +56,7 @@ Confirmed `grafana.enabled=false` worked as intended — the chart's install NOT
 
 ## Remaining steps
 
-- [ ] Add Prometheus as a Grafana datasource — `http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090`
+- [x] Add Prometheus as a Grafana datasource — `http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090`, tested successfully
 - [ ] Add Kubernetes event collection to Alloy's config
 - [ ] Write `apps/alloy` (or `platform/alloy`) in the `gitops` repo, wire into the relevant Kustomization
 - [ ] Write `platform/kube-prometheus-stack` (or similar) in the `gitops` repo, `grafana.enabled=false`
