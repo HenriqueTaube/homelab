@@ -67,12 +67,20 @@ Picks, in order:
 
 Import each via Grafana → **Dashboards → New → Import**, pasting the JSON, Prometheus datasource selected.
 
+**Imported so far: Global and Nodes.** Exported JSON copies saved for reference at [`kubernetes/grafana/config/Global-1786058781827.json`](../kubernetes/grafana/config/Global-1786058781827.json) and [`kubernetes/grafana/config/Nodes-1786058801144.json`](../kubernetes/grafana/config/Nodes-1786058801144.json), same pattern as the existing `proxmox-1782525535186.json`. Namespaces, Pods, and Node Exporter Full still to do.
+
+**Missing: an Alloy dashboard.** None of the dotdc dashboards cover Alloy itself (they're all Prometheus/kube-state-metrics-driven, and Alloy's own health isn't being scraped yet — it exposes its own `/metrics` endpoint on `:12345` that Prometheus isn't currently pointed at). Two things needed:
+1. A `ServiceMonitor` (or `PodMonitor`) so `kube-prometheus-stack`'s Prometheus Operator picks up Alloy's self-metrics.
+2. Alloy's official dashboards, via its "mixin" — rendered JSON lives in the `grafana/alloy` repo at [`operations/alloy-mixin/rendered/dashboards/`](https://github.com/grafana/alloy/tree/main/operations/alloy-mixin/rendered/dashboards) (no single grafana.com numeric ID for this one — pull the JSON files directly from that path and import each).
+
 Stretch goal: an etcd-health panel would have surfaced the `control-plane-proxmox` etcd blip (see conversation history / control-plane logs, 2026-08-05) immediately instead of it being found by chance. `kube-prometheus-stack` disables etcd/controller-manager/scheduler scraping by default — same Talos gap noted above — so this needs extra scrape-config work (Talos exposes etcd differently than kubeadm) before it's viable. Not blocking the initial dashboard import.
 
 ## Remaining steps
 
 - [x] Add Prometheus as a Grafana datasource — `http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090`, tested successfully
-- [ ] Import `dotdc/grafana-dashboards-kubernetes` (Global/Nodes/Namespaces/Pods) + Node Exporter Full (`1860`) into Grafana
+- [x] Import `dotdc/grafana-dashboards-kubernetes` Global and Nodes into Grafana (saved to `kubernetes/grafana/config/`)
+- [ ] Import `dotdc/grafana-dashboards-kubernetes` Namespaces and Pods + Node Exporter Full (`1860`)
+- [ ] Add a `ServiceMonitor`/`PodMonitor` for Alloy's own `:12345/metrics`, then import its mixin dashboards from `grafana/alloy` (`operations/alloy-mixin/rendered/dashboards/`)
 - [ ] Add Kubernetes event collection to Alloy's config
 - [ ] Write `apps/alloy` (or `platform/alloy`) in the `gitops` repo, wire into the relevant Kustomization
 - [ ] Write `platform/kube-prometheus-stack` (or similar) in the `gitops` repo, `grafana.enabled=false`

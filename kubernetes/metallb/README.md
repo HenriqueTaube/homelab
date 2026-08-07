@@ -26,7 +26,7 @@ Cilium (the CNI) includes its own load balancer, but MetalLB was chosen to keep 
 | `192.168.1.190` | Grafana |
 | `192.168.1.191` | Forgejo |
 | `192.168.1.192` | Loki |
-| `192.168.1.193` | — |
+| `192.168.1.193` | mempool |
 | `192.168.1.194` | site-orcamentos |
 | `192.168.1.195` | WireGuard |
 

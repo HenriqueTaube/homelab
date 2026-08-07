@@ -34,3 +34,5 @@ Grafana uses PostgreSQL via CloudNativePG operator instead of the default SQLite
 | File | Description |
 |------|-------------|
 | `config/proxmox-1782525535186.json` | Proxmox node monitoring |
+| `config/Global-1786058781827.json` | [dotdc/grafana-dashboards-kubernetes](https://github.com/dotdc/grafana-dashboards-kubernetes) — cluster-wide overview |
+| `config/Nodes-1786058801144.json` | [dotdc/grafana-dashboards-kubernetes](https://github.com/dotdc/grafana-dashboards-kubernetes) — per-node resource usage |
