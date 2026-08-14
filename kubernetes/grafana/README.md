@@ -28,6 +28,7 @@ Grafana uses PostgreSQL via CloudNativePG operator instead of the default SQLite
 | Name | Type | URL |
 |------|------|-----|
 | loki | loki | `http://loki.loki.svc.cluster.local:3100` |
+| prometheus | prometheus | `http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090` |
 
 ## Dashboards
 
