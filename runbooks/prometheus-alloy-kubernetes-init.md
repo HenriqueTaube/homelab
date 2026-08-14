@@ -27,7 +27,7 @@ See also [`kubernetes/grafana/roadmap/ROADMAP.md`](../kubernetes/grafana/roadmap
 
 ## Alloy (logs) — done
 
-Installed manually via Helm. Config only discovers pods and forwards their logs to Loki so far — Kubernetes event collection was not added. See [`kubernetes/alloy/README.md`](../kubernetes/alloy/README.md) and `kubernetes/alloy/alloy-values.yaml`.
+Installed manually via Helm. Discovers pods and forwards their logs to Loki, plus Kubernetes events (added later, see below). See [`kubernetes/alloy/README.md`](../kubernetes/alloy/README.md) and `kubernetes/alloy/install/alloy-values.yaml`.
 
 ```bash
 helm repo add grafana https://grafana.github.io/helm-charts
@@ -40,6 +40,16 @@ helm install alloy grafana/alloy \
 Gotcha: the first attempt used the raw Alloy config (River syntax) as `alloy-values.yaml` directly — Helm expects a **Helm values** file, with the actual Alloy config nested as a string under `alloy.configMap.content`. Fixed by wrapping it properly (see the README/file above).
 
 Follow-up: initial config passed `discovery.kubernetes.pods.targets` straight into `loki.source.kubernetes`, so the only Loki label surviving was the raw pod instance address — `__meta_kubernetes_*` metadata gets dropped unless explicitly promoted. Added a `discovery.relabel` step to promote `namespace`, `pod`, `container`, `node`, and `app` (from `app.kubernetes.io/name`) into real labels. Deliberately skipped pod UID/IP and container image tag as labels — those change on every restart/deploy and would blow up Loki's stream cardinality; kept out of labels, still visible in the log line itself.
+
+### Kubernetes events — done
+
+Added a `loki.source.kubernetes_events "events"` component (`job_name = "kubernetes-events"`, `log_format = "json"`), forwarding to the same `loki.write "default"`. Motivation: wanted a way to see things like "did a PVC/Longhorn volume have a health event" as a log list, not a metrics graph.
+
+Diagnosis trail while getting it working, kept for reference:
+- Component order in the file doesn't matter — Alloy's config language is declarative (like Terraform), not read top-to-bottom, so `loki.source.kubernetes_events` referencing `loki.write.default.receiver` works even though it's declared *after* `loki.write "default"` in the file.
+- After applying, checked for RBAC `forbidden` errors in `kubectl -n alloy logs` (a real risk — `loki.source.kubernetes_events` needs cluster-scope permission to watch `events`, and the chart's default RBAC is built per-component) — found none. Confirmed via Alloy's own web UI (`kubectl -n alloy port-forward <pod> 12345:12345` → `http://localhost:12345`) that `loki.source.kubernetes_events.events` is healthy/green.
+- To inspect exactly what RBAC the chart actually grants (didn't end up needing this, but the right tool for it): `helm template alloy grafana/alloy --show-only templates/rbac.yaml`.
+- **Realization: this component wasn't actually the right tool for the original goal.** Kubernetes Events are mostly generic pod lifecycle noise (`Scheduled`, `Pulled`, `Killing`) and only exist when something formally calls the Events API — Longhorn's volume degraded/faulted state changes aren't guaranteed to show up there. The actual signal was already being collected since the very first Alloy config: `longhorn-manager`'s own pod logs (`{namespace="longhorn-system"}`), tailed like any other pod via `loki.source.kubernetes`. The events source is still useful for general cluster activity, just wasn't the fix for the Longhorn-visibility goal specifically.
 
 ## Prometheus (metrics) — done
 
@@ -81,7 +91,8 @@ Stretch goal: an etcd-health panel would have surfaced the `control-plane-proxmo
 - [x] Import `dotdc/grafana-dashboards-kubernetes` Global and Nodes into Grafana (saved to `kubernetes/grafana/config/`)
 - [ ] Import `dotdc/grafana-dashboards-kubernetes` Namespaces and Pods + Node Exporter Full (`1860`)
 - [ ] Add a `ServiceMonitor`/`PodMonitor` for Alloy's own `:12345/metrics`, then import its mixin dashboards from `grafana/alloy` (`operations/alloy-mixin/rendered/dashboards/`)
-- [ ] Add Kubernetes event collection to Alloy's config
+- [x] Add Kubernetes event collection to Alloy's config — done, but turned out not to be the fix for Longhorn/PVC visibility (see "Kubernetes events — done" above); real signal is `{namespace="longhorn-system"}` pod logs, already flowing
+- [ ] Add a `ServiceMonitor`/`PodMonitor` for Longhorn's own Prometheus metrics (`longhorn_volume_robustness` etc.) — pairs with the log query above for full PVC health (structured state + why)
 - [ ] Write `apps/alloy` (or `platform/alloy`) in the `gitops` repo, wire into the relevant Kustomization
 - [ ] Write `platform/kube-prometheus-stack` (or similar) in the `gitops` repo, `grafana.enabled=false`
 - [ ] Validate with `kubectl kustomize` locally before pushing (bit everyone during the mempool init — cheap insurance)
