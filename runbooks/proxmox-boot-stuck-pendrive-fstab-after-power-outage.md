@@ -16,7 +16,7 @@ Timed out ... Failed to mount /mnt/pendrive
 
 `/mnt/pendrive` is the USB pendrive used as the local `vzdump` backup target. Because its fstab entry failed, boot never got past `local-fs.target`, so the host dropped into emergency mode. The network (`vmbr0`) and all VMs never started.
 
-**Status: fixed and booting normally, but the root cause of the mount failure is not confirmed.** See [Open question](#open-question--why-did-the-mount-fail) below.
+**Status: fixed and booting normally. fstab hardened (`UUID=` + `nofail` + short device timeout) so this can't block boot again, but the root cause of the original mount failure is not confirmed.** See [Open question](#open-question--why-did-the-mount-fail) below.
 
 ## Symptoms
 
@@ -76,19 +76,30 @@ Since the same fstab line works now, **the fstab line itself isn't wrong in gene
 - Removed the `/mnt/pendrive` fstab line to get the host booting, then put it back (`mount -a` + reboot both worked).
 - ISP re-enabled the modem's default DNS, which brought the LAN back.
 
-**Still to do (prevents a repeat):** add `nofail` and a short device timeout to the pendrive's fstab entry, so a missing or broken pendrive only means "backup target not mounted", not "whole host doesn't boot":
+**Applied (prevents a repeat):** changed the pendrive's fstab entry to use its UUID, `nofail`, and a short device timeout. Now a missing or broken pendrive only means "backup target not mounted", not "whole host doesn't boot":
 
 ```
 UUID=<pendrive-uuid>  /mnt/pendrive  ext4  defaults,nofail,x-systemd.device-timeout=10s  0  2
 ```
 
+- `UUID=` instead of `/dev/sdX1`: device letters can change between boots, the UUID doesn't
+- `nofail`: if the mount fails, boot continues without it instead of dropping into emergency mode
+- `x-systemd.device-timeout=10s`: wait 10s for the pendrive instead of the default 90s
+- `0 2`: keep the boot-time fsck. With `nofail`, a failed fsck no longer blocks boot
+
+Applied and tested before rebooting:
+
 ```bash
-blkid                          # get the pendrive UUID; use it instead of /dev/sdX
+blkid | grep -i ext4           # get the pendrive UUID
+cp /etc/fstab /etc/fstab.bak
+nano /etc/fstab                # replace the /mnt/pendrive line
 systemctl daemon-reload
+umount /mnt/pendrive
 mount -a
+findmnt /mnt/pendrive          # pendrive mounted
 ```
 
-If the pendrive is a Proxmox `dir` storage, also mark it as a mountpoint. Otherwise, when the pendrive isn't mounted, `vzdump` writes the backup into the empty `/mnt/pendrive` folder **on the root disk** and can fill it up:
+**Recommended, not confirmed as done:** if the pendrive is a Proxmox `dir` storage, also mark it as a mountpoint. Otherwise, when the pendrive isn't mounted, `vzdump` writes the backup into the empty `/mnt/pendrive` folder **on the root disk** and can fill it up:
 
 ```bash
 pvesm set <storage-id> --is_mountpoint yes
@@ -125,7 +136,7 @@ journalctl -b <boot-id> -u mnt-pendrive.mount
 What each message means:
 - `Timed out waiting for device /dev/...` → cause 1 or 3 (device never showed up or was late)
 - `Dependency failed for /mnt/pendrive` + a failed `systemd-fsck@...` → cause 2 (dirty filesystem)
-- Nothing saved for that boot → can't tell from logs; apply the `nofail` fix above anyway
+- Nothing saved for that boot → can't tell from logs. The `nofail` fix above makes the exact cause less critical, because it can no longer block boot
 
 ## Lesson
 
